@@ -6,6 +6,7 @@ from interactions.ext import prefixed_commands as prefixed
 
 __all__ = ("slash_to_prefixed",)
 
+
 def type_from_option(option_type: ipy.OptionType | int):
     if option_type == ipy.OptionType.STRING:
         return str
@@ -44,18 +45,20 @@ def slash_to_prefixed(cmd: ipy.SlashCommand) -> prefixed.PrefixedCommand:
     fake_sig_parameters: list[inspect.Parameter] = []
 
     for option in cmd.options:
-        actual_param = inspect.Parameter(name=str(option.name), kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        actual_param = inspect.Parameter(
+            name=str(option.name), kind=inspect.Parameter.POSITIONAL_OR_KEYWORD
+        )
 
         slash_param = cmd.parameters.get(str(option.name))
         no_anno = True
-        
+
         if slash_param:
             if slash_param.converter:
                 actual_param = actual_param.replace(annotation=slash_param.converter)
                 no_anno = False
             if slash_param.default is not inspect.Parameter.empty:
                 actual_param = actual_param.replace(default=slash_param.default)
-        
+
         if no_anno:
             anno_to_use = type_from_option(option.type)
             if not option.required:
@@ -66,6 +69,3 @@ def slash_to_prefixed(cmd: ipy.SlashCommand) -> prefixed.PrefixedCommand:
 
     prefixed_cmd._inspect_signature = inspect.Signature(parameters=fake_sig_parameters)
     return prefixed_cmd
-            
-
-

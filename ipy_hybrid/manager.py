@@ -5,6 +5,7 @@ from .to_prefixed import slash_to_prefixed
 
 __all__ = ("HackyBot",)
 
+
 class HackyBot(prefixed.PrefixedInjectedClient):
     def add_interaction(self, command: ipy.InteractionCommand) -> bool:
         actual_cmd = super().add_interaction(command)
