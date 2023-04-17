@@ -23,7 +23,7 @@ def type_from_option(option_type: ipy.OptionType | int):
     elif option_type == ipy.OptionType.ROLE:
         return ipy.Role
     elif option_type == ipy.OptionType.MENTIONABLE:
-        return ipy.BaseChannel | ipy.Role
+        return ipy.Member | ipy.User | ipy.Role
     elif option_type == ipy.OptionType.ATTACHMENT:
         raise NotImplementedError("Attachments are not supported in prefixed commands.")
     raise NotImplementedError(f"Unknown option type: {option_type}")
