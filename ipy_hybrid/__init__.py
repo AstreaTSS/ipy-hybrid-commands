@@ -8,4 +8,5 @@ A test for hybrid commands for interactions.py.
 __version__ = "0.1.0"
 
 from .manager import *
-from .to_prefixed import *
+from .hybrid_slash import *
+from .context import *
