@@ -301,3 +301,82 @@ class HybridContext(ipy.BaseContext, SendMixin):
             delete_after=delete_after,
             **kwargs,
         )
+
+    async def delete(self, message: "ipy.Snowflake_Type") -> None:
+        """
+        Delete a message sent in response to this context. Must be in the same channel as the context.
+
+        Args:
+            message: The message to delete
+        """
+
+        if self._slash_ctx:
+            return await self._slash_ctx.delete(message)
+        await self.client.http.delete_message(
+            self.channel_id, ipy.to_snowflake(message)
+        )
+
+    async def edit(
+        self,
+        message: "ipy.Snowflake_Type",
+        *,
+        content: _typing.Optional[str] = None,
+        embeds: _typing.Optional[
+            _typing.Union[
+                _typing.Iterable[_typing.Union["ipy.Embed", dict]],
+                _typing.Union["ipy.Embed", dict],
+            ]
+        ] = None,
+        embed: _typing.Optional[_typing.Union["ipy.Embed", dict]] = None,
+        components: _typing.Optional[
+            _typing.Union[
+                _typing.Iterable[
+                    _typing.Iterable[_typing.Union["ipy.BaseComponent", dict]]
+                ],
+                _typing.Iterable[_typing.Union["ipy.BaseComponent", dict]],
+                "ipy.BaseComponent",
+                dict,
+            ]
+        ] = None,
+        attachments: _typing.Optional[_typing.Sequence[ipy.Attachment | dict]] = None,
+        allowed_mentions: _typing.Optional[
+            _typing.Union["ipy.AllowedMentions", dict]
+        ] = None,
+        files: _typing.Optional[
+            _typing.Union[
+                "ipy.UPLOADABLE_TYPE", _typing.Iterable["ipy.UPLOADABLE_TYPE"]
+            ]
+        ] = None,
+        file: _typing.Optional["ipy.UPLOADABLE_TYPE"] = None,
+        tts: bool = False,
+    ) -> "ipy.Message":
+        if self._slash_ctx:
+            return await self._slash_ctx.edit(
+                message,
+                content=content,
+                embeds=embeds,
+                embed=embed,
+                components=components,
+                attachments=attachments,
+                allowed_mentions=allowed_mentions,
+                files=files,
+                file=file,
+                tts=tts,
+            )
+
+        message_payload = ipy.process_message_payload(
+            content=content,
+            embeds=embeds or embed,
+            components=components,
+            allowed_mentions=allowed_mentions,
+            attachments=attachments,
+            tts=tts,
+        )
+        if file:
+            files = [file, *files] if files else [file]
+
+        message_data = await self.client.http.edit_message(
+            message_payload, self.channel_id, ipy.to_snowflake(message), files=files
+        )
+        if message_data:
+            return self.client.cache.place_message_data(message_data)
