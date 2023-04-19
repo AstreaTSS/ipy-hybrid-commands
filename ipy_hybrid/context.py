@@ -46,6 +46,8 @@ class HybridContext(ipy.BaseContext, SendMixin):
     kwargs: dict[str, _typing.Any]
     """The keyword arguments passed to the command."""
 
+    __attachment_index__: int
+
     _slash_ctx: ipy.SlashContext | None
     _prefixed_ctx: prefixed.PrefixedContext | None
 
@@ -60,6 +62,7 @@ class HybridContext(ipy.BaseContext, SendMixin):
         self.args = []
         self.kwargs = {}
         self._message = None
+        self.__attachment_index__ = 0
         self._slash_ctx = None
         self._prefixed_ctx = None
 

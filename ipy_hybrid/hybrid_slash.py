@@ -7,6 +7,9 @@ import interactions as ipy
 from interactions.ext import prefixed_commands as prefixed
 from interactions.models.internal.converters import _LiteralConverter
 
+if typing.TYPE_CHECKING:
+    from .context import HybridContext
+
 __all__ = ("HybridSlashCommand", "hybrid_slash_command", "hybrid_slash_subcommand")
 
 
@@ -33,6 +36,16 @@ class BoolConverter(ipy.Converter):
             raise ipy.errors.BadArgument(
                 f"{argument} is not a recognised boolean option."
             )
+
+
+class AttachmentConverter(ipy.NoArgumentConverter):
+    async def convert(self, ctx: "HybridContext", _: typing.Any) -> ipy.Attachment:
+        try:
+            attachment = ctx.message.attachments[ctx.__attachment_index__]
+            ctx.__attachment_index__ += 1
+            return attachment
+        except IndexError:
+            raise ipy.errors.BadArgument("No attachment found.") from None
 
 
 class ChoicesConverter(_LiteralConverter):
@@ -167,6 +180,26 @@ class ChainConverter(ipy.Converter):
         )
 
 
+class ChainNoArgConverter(ipy.NoArgumentConverter):
+    def __init__(
+        self,
+        first_converter: ipy.NoArgumentConverter,
+        second_converter: type[ipy.Converter] | ipy.Converter,
+        name_of_cmd: str,
+    ) -> None:
+        self.first_converter = first_converter
+        self.second_converter = second_converter
+        self.name_of_cmd = name_of_cmd
+
+    async def convert(self, ctx: "HybridContext", _: typing.Any) -> typing.Any:
+        first = await self.first_converter.convert(ctx, _)
+        return await ipy.utils.maybe_coroutine(
+            ipy.BaseCommand._get_converter_function(
+                self.second_converter, self.name_of_cmd
+            )(ctx, first)
+        )
+
+
 def type_from_option(option_type: ipy.OptionType | int) -> ipy.Converter:
     if option_type == ipy.OptionType.STRING:
         return BasicConverter(str)
@@ -187,7 +220,7 @@ def type_from_option(option_type: ipy.OptionType | int) -> ipy.Converter:
             ipy.MemberConverter, ipy.UserConverter, ipy.RoleConverter
         )
     elif option_type == ipy.OptionType.ATTACHMENT:
-        raise NotImplementedError("Attachments are not supported in prefixed commands.")
+        return AttachmentConverter()
     raise NotImplementedError(f"Unknown option type: {option_type}")
 
 
@@ -312,10 +345,12 @@ def slash_to_prefixed(cmd: ipy.SlashCommand) -> _HybridToPrefixedCommand:
         else:
             option_anno = type_from_option(option.type)
 
-        if annotation is not inspect.Parameter.empty:
-            annotation = ChainConverter(option_anno, annotation, name)
-        else:
+        if annotation is inspect.Parameter.empty:
             annotation = option_anno
+        elif isinstance(option_anno, ipy.NoArgumentConverter):
+            annotation = ChainNoArgConverter(option_anno, annotation, name)
+        else:
+            annotation = ChainConverter(option_anno, annotation, name)
 
         if not option.required and default == inspect.Parameter.empty:
             default = None
