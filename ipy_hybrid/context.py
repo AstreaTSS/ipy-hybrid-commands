@@ -92,7 +92,7 @@ class HybridContext(ipy.BaseContext, SendMixin):
             app_permissions = ctx.channel.parent_channel.permissions_for(ctx.guild.me)  # type: ignore
         else:
             # this is what happens with interaction contexts in dms
-            app_permissions = ipy.Permissions(0)
+            app_permissions = ipy.Permissions(0b1111100110001000000)
 
         self = cls(ctx.client)
         self.prefix = ctx.prefix
